@@ -5,7 +5,8 @@
 # POTENTIAL QUALITY ISSUE:
 # 1. 7 COFFEE symbol record have contractsize as null. However since contractsize 
 #    is not specified to be included in report explicitly, this is ignored.
-
+# 2. the contractsize column and volume seems to be independent, would a better measurement be contractsize * volume / (10**digits)?
+#    as this is not specified in the docs, this will require feedback for future iteration. 
 
 
 from dotenv import load_dotenv
