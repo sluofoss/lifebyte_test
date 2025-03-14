@@ -111,11 +111,13 @@ WITH date_series AS (
 )
 --, res as ( 
 select 
-    s.dt_report
-    , s.login_hash
-    , s.server_hash
-    , s.symbol
-    , s.currency
+    s.dt_report::date
+    , s.login_hash::text
+    , s.server_hash::text
+    , s.symbol::text
+    , s.currency::text
+    , s.sum_volume_prev_7d::double precision
+    , s.sum_volume_prev_all::double precision
     , dense_rank() over (
         partition by s.dt_report
         order by s.__login_symbol_volume_7d desc
@@ -124,10 +126,8 @@ select
         partition by s.dt_report
         order by s.__login_count_7d desc
     ) as rank_count_prev_7d
-    , s.sum_volume_prev_7d
-    , s.sum_volume_prev_all
-    , s.sum_volume_2020_08
-    , s.date_first_trade
+    , s.sum_volume_2020_08::double precision
+    , s.date_first_trade::timestamp
     , s.row_number
 from stg s
 order by s.row_number
