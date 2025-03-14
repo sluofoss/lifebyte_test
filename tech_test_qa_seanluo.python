@@ -1,3 +1,7 @@
+# QUALITY ISSUE FOUND:
+# 1. USD,CHF can be considered the same as USDCHF 
+# 2. a lot of duplicate records from the users table.
+
 from dotenv import load_dotenv
 import os, sys
 
@@ -6,6 +10,8 @@ import polars as pl
 
 import argparse
 
+# below are query used to perform EDA on suspected quality issues:
+# including date range, missing value, invalid string
 queries = {
     'schema check user':"""select * from users limit 10;""",
     'schema check trades':"""select * from trades limit 10;""",
@@ -86,11 +92,11 @@ queries = {
     """
 
 }
-# One issue missed during testing is the chance of duplicate record. 
+# One issue missed during 1st stage testing is the chance of duplicate record. 
+# this was discovered during QA of final query 
 # found that the users tables contains a significant amount of duplicate records.
 # this table is probably sourced from something like logged in events and not dedupped
 
-# Example usage
 if __name__ == "__main__":
     load_dotenv('lifebyte.env')
     
