@@ -1,6 +1,12 @@
 # QUALITY ISSUE FOUND:
 # 1. USD,CHF can be considered the same as USDCHF 
 # 2. a lot of duplicate records from the users table.
+# 
+# POTENTIAL QUALITY ISSUE:
+# 1. 7 COFFEE symbol record have contractsize as null. However since contractsize 
+#    is not specified to be included in report explicitly, this is ignored.
+
+
 
 from dotenv import load_dotenv
 import os, sys
