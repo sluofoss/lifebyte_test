@@ -2,7 +2,7 @@ WITH date_series AS (
     SELECT generate_series('2020-06-01'::date, '2020-09-30'::date, '1 day') AS date
 )
 , report_user_dates as (
-    SELECT u.*, d.date as dt_report
+    SELECT distinct u.login_hash, u.server_hash, u.currency, d.date as dt_report
     FROM users u
     CROSS JOIN date_series d
     WHERE u.enable = 1
@@ -109,6 +109,7 @@ WITH date_series AS (
         and d.server_hash = t.server_hash
         and d.dt_report = t.dt_report
 )
+--, res as ( 
 select 
     s.dt_report
     , s.login_hash
@@ -130,7 +131,30 @@ select
     , s.row_number
 from stg s
 order by s.row_number
-
+--)
+/*
+select * 
+from users
+where login_hash = '18D4C2E739573770F9DF198F0E51C1B9'
+--order by dt_report
+*/
+/*
+select 
+    s.dt_report
+    , s.login_hash
+    , s.server_hash
+    , s.symbol
+    , s.currency
+    , count(*) as cnt
+from res s
+group by
+    s.dt_report
+    , s.login_hash
+    , s.server_hash
+    , s.symbol
+    , s.currency
+order by cnt desc
+*/
 
 /*
 select count(distinct dt_report)
@@ -138,9 +162,12 @@ from res
 union all
 select count(distinct date)
 from date_series
+*/
 
-
-
+/*
+select count(*), 'dates'
+from date_series
+union
 select count(*), 'current res'
 from res
 union 
@@ -154,6 +181,20 @@ from (
     , s.currency
     from res s
 ) r
+union
+select count(*), 'uuid actual'
+from (
+    select 
+    s.dt_report
+    , s.login_hash
+    , s.server_hash
+    , s.symbol
+    , s.currency
+    from res s
+) r
+union
+select count(*), 'enabled_trade_daily_agg'
+from enabled_trade_daily_agg
 union 
 select count(*), 'report user dates'
 from report_user_dates r

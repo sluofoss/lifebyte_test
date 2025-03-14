@@ -64,9 +64,31 @@ queries = {
     from users
     group by enable;
     """,
+    'user cardinality check':
+    """
+    select count(*), 'all'
+    from users
+    union all
+    select count(*), 'distincts'
+    from (
+        select distinct 
+        "login_hash", "server_hash", "country_hash", "currency", "enable"
+        from users
+    ) r
+    union all
+    select count(*), 'distinct enable'
+    from (
+        select distinct 
+        "login_hash", "server_hash", "country_hash", "currency"
+        from users
+        where enable = 1
+    ) r
+    """
 
 }
-
+# One issue missed during testing is the chance of duplicate record. 
+# found that the users tables contains a significant amount of duplicate records.
+# this table is probably sourced from something like logged in events and not dedupped
 
 # Example usage
 if __name__ == "__main__":
