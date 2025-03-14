@@ -1,43 +1,68 @@
 from dotenv import load_dotenv
-import os
+import os, sys
 
 import pandas as pd
 import polars as pl
+
+import argparse
 
 queries = {
     'schema check user':"""select * from users limit 10;""",
     'schema check trades':"""select * from trades limit 10;""",
     'date_range_check': 
-    """select count(*), date_trunc('month', close_time) as year_month from trades group by date_trunc('month', close_time);""",
+    """select count(*), date_trunc('month', close_time) as year_month from trades group by year_month order by year_month;""",
     'null check users':
     """
     SELECT 
         SUM(CASE WHEN login_hash IS NULL THEN 1 ELSE 0 END) AS login_null_tally
-        , SUM(CASE WHEN server_hash IS NULL THEN 1 ELSE 0 END) AS server_null_tally
-        --, SUM(CASE WHEN ticket_hash IS NULL THEN 1 ELSE 0 END) AS ticket_null_tally -- this shouldnt affect the aggregates but lets check anyway
-        --, SUM(CASE WHEN volume IS NULL THEN 1 ELSE 0 END) AS volume_null_tally
+        , SUM(CASE WHEN server_hash IS NULL THEN 1 ELSE 0 END) AS server_hash_null_tally
+        , SUM(CASE WHEN country_hash IS NULL THEN 1 ELSE 0 END) AS country_hash_null_tally
+        , SUM(CASE WHEN enable IS NULL THEN 1 ELSE 0 END) AS enable_null_tally
+        , SUM(CASE WHEN currency IS NULL THEN 1 ELSE 0 END) AS currency_null_tally
     FROM users;
     """,
     'null check trades':
+    #-- ticket hash shouldnt affect the aggregates but lets check anyway
     """
     SELECT 
-        --SUM(CASE WHEN login_hash IS NULL THEN 1 ELSE 0 END) AS login_null_tally
-        --, SUM(CASE WHEN server_hash IS NULL THEN 1 ELSE 0 END) AS server_null_tally
-        SUM(CASE WHEN ticket_hash IS NULL THEN 1 ELSE 0 END) AS ticket_null_tally -- this shouldnt affect the aggregates but lets check anyway
-        , SUM(CASE WHEN volume IS NULL THEN 1 ELSE 0 END) AS volume_null_tally
+        SUM(CASE WHEN login_hash IS NULL THEN 1 ELSE 0 END) AS ticket_null_tally 
+        , SUM(CASE WHEN ticket_hash IS NULL THEN 1 ELSE 0 END) AS ticket_hash_null_tally 
+        , SUM(CASE WHEN server_hash IS NULL THEN 1 ELSE 0 END) AS server_hash_null_tally 
+        , SUM(CASE WHEN symbol IS NULL THEN 1 ELSE 0 END) AS symbol_null_tally 
+        , SUM(CASE WHEN digits IS NULL THEN 1 ELSE 0 END) AS digits_null_tally 
+        , SUM(CASE WHEN cmd IS NULL THEN 1 ELSE 0 END) AS cmd_null_tally 
+        , SUM(CASE WHEN volume IS NULL THEN 1 ELSE 0 END) AS volume_null_tally 
+        , SUM(CASE WHEN open_time IS NULL THEN 1 ELSE 0 END) AS open_time_null_tally 
+        , SUM(CASE WHEN open_price IS NULL THEN 1 ELSE 0 END) AS open_price_null_tally 
+        , SUM(CASE WHEN close_time IS NULL THEN 1 ELSE 0 END) AS close_time_null_tally 
+        , SUM(CASE WHEN contractsize IS NULL THEN 1 ELSE 0 END) AS contractsize_null_tally 
+    
     FROM trades;
     """,
     'check invalid symbol':
     """
-    select distinct symbol, length(symbol) as sym_len
+    select symbol, length(symbol) as sym_len, count(*)
     from trades
+    group by symbol, sym_len
     order by sym_len desc
     """,
     'check invalid currency':
     """
     select distinct currency, length(currency) as sym_len
-    from trades
+    from users
     order by sym_len desc
+    """,
+    'check null contract size records':
+    """
+    select *
+    from trades
+    where contractsize is null;
+    """,
+    'check unique val of enable':
+    """
+    select enable, count(*)
+    from users
+    group by enable;
     """,
 
 }
@@ -55,11 +80,24 @@ if __name__ == "__main__":
     
     uri = f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
     
+    if len(sys.argv)>2 and sys.argv[2] == 'extract':
+        with open('./tech_test_query_seanluo.sql', 'r') as file:
+            lines = file.readlines()
+        
+            # Remove lines containing '--'
+            filtered_lines = [line.strip() for line in lines if '--' not in line]
+        
+            # Concatenate the remaining lines with ' ' as the separator
+            result = ' '.join(filtered_lines)
+
+            queries = {'submit':result}
+
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         for name, query in queries.items():
             print("--------------------------------")
             print(name)
-            res = pl.read_database_uri(query.replace("\n",''), uri = uri).to_pandas()
+            print(query.replace("\n",' '))
+            res = pl.read_database_uri(query.replace("\n",' ').strip(), uri = uri).to_pandas()
             print(res.columns)
             print(res)
             print("--------------------------------")
