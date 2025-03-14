@@ -1,0 +1,65 @@
+from dotenv import load_dotenv
+import os
+
+import pandas as pd
+import polars as pl
+
+queries = {
+    'schema check user':"""select * from users limit 10;""",
+    'schema check trades':"""select * from trades limit 10;""",
+    'date_range_check': 
+    """select count(*), date_trunc('month', close_time) as year_month from trades group by date_trunc('month', close_time);""",
+    'null check users':
+    """
+    SELECT 
+        SUM(CASE WHEN login_hash IS NULL THEN 1 ELSE 0 END) AS login_null_tally
+        , SUM(CASE WHEN server_hash IS NULL THEN 1 ELSE 0 END) AS server_null_tally
+        --, SUM(CASE WHEN ticket_hash IS NULL THEN 1 ELSE 0 END) AS ticket_null_tally -- this shouldnt affect the aggregates but lets check anyway
+        --, SUM(CASE WHEN volume IS NULL THEN 1 ELSE 0 END) AS volume_null_tally
+    FROM users;
+    """,
+    'null check trades':
+    """
+    SELECT 
+        --SUM(CASE WHEN login_hash IS NULL THEN 1 ELSE 0 END) AS login_null_tally
+        --, SUM(CASE WHEN server_hash IS NULL THEN 1 ELSE 0 END) AS server_null_tally
+        SUM(CASE WHEN ticket_hash IS NULL THEN 1 ELSE 0 END) AS ticket_null_tally -- this shouldnt affect the aggregates but lets check anyway
+        , SUM(CASE WHEN volume IS NULL THEN 1 ELSE 0 END) AS volume_null_tally
+    FROM trades;
+    """,
+    'check invalid symbol':
+    """
+    select distinct symbol, length(symbol) as sym_len
+    from trades
+    order by sym_len desc
+    """,
+    'check invalid currency':
+    """
+    select distinct currency, length(currency) as sym_len
+    from trades
+    order by sym_len desc
+    """,
+
+}
+
+
+# Example usage
+if __name__ == "__main__":
+    load_dotenv('lifebyte.env')
+    
+    dbname = os.getenv("DB_NAME")
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+    host = os.getenv("DB_HOST", "localhost")
+    port = os.getenv("DB_PORT", "5432")
+    
+    uri = f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+    
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        for name, query in queries.items():
+            print("--------------------------------")
+            print(name)
+            res = pl.read_database_uri(query.replace("\n",''), uri = uri).to_pandas()
+            print(res.columns)
+            print(res)
+            print("--------------------------------")
